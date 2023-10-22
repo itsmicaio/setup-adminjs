@@ -1,9 +1,10 @@
-import AdminJS from "adminjs";
+import AdminJS, { AdminJSOptions } from "adminjs";
 import AdminJSExpress from "@adminjs/express";
 import express from "express";
 import mongoose from "mongoose";
 import * as AdminJSMongoose from "@adminjs/mongoose";
 import 'dotenv/config';
+import { MovieResource } from "./movie.resource.js";
 
 AdminJS.registerAdapter({
   Resource: AdminJSMongoose.Resource,
@@ -17,8 +18,10 @@ const start = async () => {
   console.log(process.env.MONGO_DB_URL)
   await mongoose.connect(process.env.MONGO_DB_URL || "");
   
-  
-  const admin = new AdminJS({});
+  const adminOptions: AdminJSOptions = {
+    resources: [MovieResource],
+  }
+  const admin = new AdminJS(adminOptions);
 
   const adminRouter = AdminJSExpress.buildRouter(admin);
   app.use(admin.options.rootPath, adminRouter);
