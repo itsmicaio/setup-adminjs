@@ -5,8 +5,11 @@ import mongoose from "mongoose";
 import * as AdminJSMongoose from "@adminjs/mongoose";
 import "dotenv/config";
 import { MovieResource } from "./movie.resource.js";
+import { AdminResource } from "./admin.resource.js";
 import { componentLoader } from "./components.js";
 import { DashboardOptions } from "./dashboard.config.js";
+import { AuthOptions } from "./auth.config.js";
+import MongoStore from "connect-mongo";
 
 AdminJS.registerAdapter({
   Resource: AdminJSMongoose.Resource,
@@ -18,15 +21,25 @@ const PORT = 3000;
 const start = async () => {
   const app = express();
   await mongoose.connect(process.env.MONGO_DB_URL || "");
-
+  const sessionStore = MongoStore.create({
+    client: mongoose.connection.getClient(),
+    collectionName: "sessions",
+    stringify: false,
+    autoRemove: "interval",
+    autoRemoveInterval: 1,
+  });
   const adminOptions: AdminJSOptions = {
-    resources: [MovieResource],
+    resources: [MovieResource, AdminResource],
     dashboard: DashboardOptions,
     componentLoader,
   };
   const admin = new AdminJS(adminOptions);
-
-  const adminRouter = AdminJSExpress.buildRouter(admin);
+  const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+    admin,
+    AuthOptions.auth,
+    null,
+    AuthOptions.session(sessionStore)
+  );
   app.use(admin.options.rootPath, adminRouter);
 
   app.listen(PORT, () => {
